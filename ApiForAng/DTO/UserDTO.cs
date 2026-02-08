@@ -1,8 +1,6 @@
-﻿using System.Globalization;
-
-namespace ApiForAng.Models
+﻿namespace ApiForAng.DTO
 {
-    public class User
+    public class UserDTO
     {
         public int Id { get; set; }
         public string Name { get; set; }
@@ -10,6 +8,6 @@ namespace ApiForAng.Models
         public string Password { get; set; }
         public String Address { get; set; }
         public string City { get; set; }
-        public string ? Number {  get; set; }
+        public string ?Number { get; set; }
     }
 }
