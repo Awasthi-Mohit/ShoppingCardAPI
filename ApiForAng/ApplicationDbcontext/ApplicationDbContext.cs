@@ -15,5 +15,6 @@ namespace ApiForAng.ApplicationDbcontext
         public DbSet<Category> categories { get; set; } 
         public DbSet<Cart> carts { get; set; }  
         public DbSet<Cartitems> cartitems { get; set; }
+        public DbSet<Employee>Employee { get; set; }
     }
 }

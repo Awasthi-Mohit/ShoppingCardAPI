@@ -34,13 +34,14 @@ namespace ApiForAng.Controllers
                 if (request == null)
                     return BadRequest("Invalid request");
  var user = _context.uses.FirstOrDefault(u => u.Email == request.Email && u.Password == request.Password);
-   //             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(
-   //    request.Password,
-   //    user.PasswordHash
-   //);
+                //             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(
+                //    request.Password,
+                //    user.PasswordHash
+                //);
 
                 //if (!isPasswordValid)
                 //    return Unauthorized("Invalid email or password");
+                string role = user.Email.ToLower() == "awasthi221@gmail.com" ? "Admin" : "User";
 
                 var token = GenerateJwtToken(request.Email);
 

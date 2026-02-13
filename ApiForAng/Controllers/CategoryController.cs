@@ -2,7 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ApiForAng.ApplicationDbcontext;
 using ApiForAng.DTO;
-using ApiForAng.Models; 
+using ApiForAng.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ApiForAng.Controllers
 {
@@ -10,12 +11,13 @@ namespace ApiForAng.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
+
         private readonly ApplicationDbContext _context;
         public CategoryController(ApplicationDbContext context)
         {
             _context = context;
         }
-
+        [Authorize("Admin")]
         [HttpGet("Category")]
         public async Task<IActionResult> GetCategories()
         {
@@ -23,6 +25,8 @@ namespace ApiForAng.Controllers
             return Ok(categories);
         }
         [HttpPost("Category")]
+        [Authorize("Admin")]
+
         public IActionResult CreateCategory([FromBody] CategoryDto category)
         {
             if (category == null)
@@ -39,6 +43,8 @@ namespace ApiForAng.Controllers
             return Ok(categoryEntity);
         }
         [HttpPut("UpdateCategory")]
+        [Authorize("Admin")]
+
         public IActionResult UpdateCategory([FromBody] CategoryDto category)
         {
             if (category == null)
