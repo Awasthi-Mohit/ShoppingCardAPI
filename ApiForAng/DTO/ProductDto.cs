@@ -14,6 +14,7 @@ namespace ApiForAng.DTO
         public string ?size { get; set; }
 
         public string ?ImageUrl { get; set; }
+        public IFormFile Image { get; set; }   
 
         public int CategoryId { get; set; }
         public Category Category { get; set; }

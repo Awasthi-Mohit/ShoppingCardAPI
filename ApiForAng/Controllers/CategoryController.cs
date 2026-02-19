@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ApiForAng.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class CategoryController : ControllerBase
@@ -17,15 +18,13 @@ namespace ApiForAng.Controllers
         {
             _context = context;
         }
-        [Authorize("Admin")]
         [HttpGet("Category")]
         public async Task<IActionResult> GetCategories()
         {
             var categories = _context.categories.ToList();
             return Ok(categories);
         }
-        [HttpPost("Category")]
-        [Authorize("Admin")]
+        [HttpPost("Create")]
 
         public IActionResult CreateCategory([FromBody] CategoryDto category)
         {
@@ -43,7 +42,6 @@ namespace ApiForAng.Controllers
             return Ok(categoryEntity);
         }
         [HttpPut("UpdateCategory")]
-        [Authorize("Admin")]
 
         public IActionResult UpdateCategory([FromBody] CategoryDto category)
         {

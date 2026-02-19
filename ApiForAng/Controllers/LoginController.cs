@@ -1,10 +1,7 @@
 ﻿using ApiForAng.ApplicationDbcontext;
 using ApiForAng.DTO;
 using ApiForAng.Models;
-using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,48 +12,71 @@ namespace ApiForAng.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LoginController : ControllerBase
+    public class AuthController : ControllerBase
     {
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
 
-        public LoginController(IConfiguration configuration,ApplicationDbContext context)
+        public AuthController(IConfiguration configuration, ApplicationDbContext context)
         {
             _configuration = configuration;
             _context = context;
         }
 
-        [HttpPost("Login")]
+        [HttpPost("login")]
         public IActionResult Login([FromBody] LoginDto request)
         {
-            try
-            {
-                if (request == null)
-                    return BadRequest("Invalid request");
- var user = _context.uses.FirstOrDefault(u => u.Email == request.Email && u.Password == request.Password);
-                //             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(
-                //    request.Password,
-                //    user.PasswordHash
-                //);
+            if (request == null)
+                return BadRequest("Invalid request");
 
-                //if (!isPasswordValid)
-                //    return Unauthorized("Invalid email or password");
-                string role = user.Email.ToLower() == "awasthi221@gmail.com" ? "Admin" : "User";
+            var user = _context.uses
+                .FirstOrDefault(u => u.Email == request.Email
+                                  && u.Password == request.Password);
 
-                var token = GenerateJwtToken(request.Email);
-
-                return Ok(new
-                {
-                    token,
-                    email = request.Email
-                });
-
+            if (user == null)
                 return Unauthorized("Invalid email or password");
-            }
-            catch
+
+            var token = GenerateJwtToken(user.Email);
+
+            bool isAdmin = string.Equals(user.Email, "awasthi221@gmail.com", StringComparison.OrdinalIgnoreCase);
+
+            return Ok(new
             {
-                return StatusCode(500, "An error occurred while processing your request");
-            }
+                token,
+                email = user.Email,
+                role = isAdmin ? "Admin" : "User" 
+            });
+        }
+
+        // ✅ REGISTER
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(UserDTO dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest("Invalid user data");
+
+            var user = new User
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                Password = dto.Password,
+                Address = dto.Address,
+                City = dto.City,
+                Number = dto.Number
+            };
+
+            _context.uses.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok("User registered successfully");
+        }
+
+        // ✅ PROTECTED ROUTE
+        [Authorize]
+        [HttpGet("dashboard")]
+        public IActionResult Dashboard()
+        {
+            return Ok("JWT working 🚀");
         }
 
         private string GenerateJwtToken(string email)
@@ -71,9 +91,9 @@ namespace ApiForAng.Controllers
 
             var claims = new[]
             {
-            new Claim(ClaimTypes.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
+                new Claim(ClaimTypes.Email, email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
             var token = new JwtSecurityToken(
                 issuer: jwt["Issuer"],
@@ -86,46 +106,6 @@ namespace ApiForAng.Controllers
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-        [Authorize]
-        [HttpGet("dashboard")]
-        public IActionResult Dashboard()
-        {
-            return Ok("JWT working 🚀");
-        }
-
-
-
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register(UserDTO dto)
-        {
-            try
-            {
-                if(ModelState.IsValid)
-                {
-
-                    var user = new User
-                    {
-                        Name = dto.Name,
-                        Email = dto.Email,
-                        Password= dto.Password,
-                        Address = dto.Address,
-                        City = dto.City,
-                      Number = dto.Number
-                    };
-                    _context.uses.Add(user);
-                    await _context.SaveChangesAsync();
-                    return Ok("User registered successfully");
-                }
-                else
-                {
-                    return BadRequest("Invalid user data");
-                }
-            }
-            catch
-            {
-                return StatusCode(500, "An error occurred while processing your request");
-            }
         }
     }
 }

@@ -23,31 +23,49 @@ namespace ApiForAng.Controllers
             return Ok(products);
         }
 
-        [HttpPost("Products")]
+        [HttpPost("Create")]
 
-        public async Task<IActionResult> CreateProduct([FromBody] ProductDto product)
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromForm] ProductDto product)
         {
             if (product == null)
-            {
                 return BadRequest("Product data is null.");
-            }
-            var products = new Product
-            {
-                Name = product.Name
-                ,
-                Description = product.Description
-                ,
-                Price = product.Price
-                ,
-                Stock = product.Stock ?? 0,
-                size = product.size ?? string.Empty,
-                ImageUrl = product.ImageUrl ?? string.Empty,
-                CategoryId = product.CategoryId
 
+            string imagePath = "";
+
+            if (product.Image != null)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(product.Image.FileName);
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await product.Image.CopyToAsync(stream);
+                }
+
+                imagePath = "images/" + fileName;
+            }
+
+            var newProduct = new Product
+            {
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock ?? 0,
+                size = product.size ?? "",
+                ImageUrl = imagePath,
+                CategoryId = product.CategoryId
             };
-            _context.products.Add(products);
+
+            _context.products.Add(newProduct);
             await _context.SaveChangesAsync();
-            return Ok(product);
+
+            return Ok(newProduct);
         }
         [HttpPost("UpdateProduct")]
         public async Task<IActionResult> UpdateProduct([FromBody] ProductDto product)
