@@ -1,4 +1,5 @@
 ﻿using ApiForAng.ApplicationDbcontext;
+using ApiForAng.Migrations;
 using ApiForAng.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,6 @@ using System.Security.Claims;
 
 namespace ApiForAng.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CartController : ControllerBase
@@ -34,22 +34,21 @@ namespace ApiForAng.Controllers
         [HttpGet]
         public IActionResult GetCart()
         {
-            int userId = GetUserId();
 
             var cartItems = _context.cartitems
                 .Include(ci => ci.Product)
-                .Include(ci => ci.Cart)
-                .Where(ci => ci.Cart.UserId == userId)
-                .Select(ci => new
-                {
-                    ci.Id,
-                    ci.ProductId,
-                    ProductName = ci.Product.Name,
-                    ci.Product.Price,
-                    ci.Product.ImageUrl,
-                    ci.Quantity
-                })
-                .ToList();
+                .Include(ci => ci.Cart).ToList();             //.Select(ci => new
+
+                                                              //{
+                                                              //    ci.Id,
+                                                              //    ci.ProductId,
+                                                              //    ProductName = ci.Product.Name,
+                                                              //    ci.Product.Price,
+                                                              //    ci.Product.ImageUrl,
+                                                              //    ci.Quantity
+                                                              //})
+                                                              //.ToList();
+
 
             return Ok(cartItems);
         }
@@ -58,38 +57,52 @@ namespace ApiForAng.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> AddToCart(int productId, int quantity)
         {
+            // 1. Get the current User ID from your helper method
             int userId = GetUserId();
 
-            var cart = _context.carts.FirstOrDefault(c => c.UserId == userId);
+            // 2. Fetch the cart and its items in ONE database call using .Include()
+            // This prevents "N+1" query issues later.
+            var cart = await _context.carts
+                .Include(c => c.CartItems)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
 
+            // 3. If no cart exists, create a new instance in memory
             if (cart == null)
             {
                 cart = new Cart { UserId = userId };
                 _context.carts.Add(cart);
-                await _context.SaveChangesAsync();
+                // We do NOT call SaveChangesAsync here yet.
             }
 
-            var item = _context.cartitems
-                .FirstOrDefault(ci => ci.CartId == cart.Id && ci.ProductId == productId);
+            // 4. Check if the specific product is already in the cart items list
+            var item = cart.CartItems?.FirstOrDefault(ci => ci.ProductId == productId);
 
             if (item != null)
             {
+                // Update existing item quantity
                 item.Quantity += quantity;
             }
             else
             {
-                _context.cartitems.Add(new Cartitems
+                var newItem = new ApiForAng.Models.Cartitems
                 {
-                    CartId = cart.Id,
+                    CartId = cart.Id,      
                     ProductId = productId,
                     Quantity = quantity
-                });
+                };
+
+                // 2. Add the specific object you just created
+                _context.cartitems.Add(newItem);
+
+                // 3. Save to database
+                await _context.SaveChangesAsync();
             }
 
+            // 5. Save all changes (New Cart + New/Updated Item) in a single transaction
             await _context.SaveChangesAsync();
-            return Ok("Added to cart");
-        }
 
+            return Ok(new { message = "Item successfully added to cart" });
+        }
         // 🔄 PUT: api/cart/update/{cartItemId}
         [HttpPut("update/{cartItemId}")]
         public async Task<IActionResult> UpdateQuantity(int cartItemId, int quantity)
@@ -124,7 +137,7 @@ namespace ApiForAng.Controllers
 
             _context.cartitems.Remove(item);
             await _context.SaveChangesAsync();
-
+           
             return Ok("Item removed");
         }
     }

@@ -33,6 +33,7 @@ namespace ApiForAng.Controllers
                 .FirstOrDefault(u => u.Email == request.Email
                                   && u.Password == request.Password);
 
+
             if (user == null)
                 return Unauthorized("Invalid email or password");
 
@@ -107,5 +108,6 @@ namespace ApiForAng.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
     }
 }

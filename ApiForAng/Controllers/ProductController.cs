@@ -25,7 +25,6 @@ namespace ApiForAng.Controllers
 
         [HttpPost("Create")]
 
-        [HttpPost]
         public async Task<IActionResult> CreateProduct([FromForm] ProductDto product)
         {
             if (product == null)
@@ -67,26 +66,43 @@ namespace ApiForAng.Controllers
 
             return Ok(newProduct);
         }
-        [HttpPost("UpdateProduct")]
-        public async Task<IActionResult> UpdateProduct([FromBody] ProductDto product)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductDto product)
         {
-            if (product == null)
-            {
-                return BadRequest("Product data is null.");
-            }
-            var existingProduct = _context.products.FirstOrDefault(p => p.Id == product.Id);
+            var existingProduct = await _context.products.FindAsync(id);
+
             if (existingProduct == null)
-            {
                 return NotFound("Product not found.");
-            }
+
+            // Update fields
             existingProduct.Name = product.Name;
             existingProduct.Description = product.Description;
             existingProduct.Price = product.Price;
             existingProduct.Stock = product.Stock ?? 0;
             existingProduct.size = product.size ?? string.Empty;
-            existingProduct.ImageUrl = product.ImageUrl ?? string.Empty;
             existingProduct.CategoryId = product.CategoryId;
+
+            // Image Update
+            if (product.Image != null)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(product.Image.FileName);
+                var filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await product.Image.CopyToAsync(stream);
+                }
+
+                existingProduct.ImageUrl = "images/" + fileName;
+            }
+
             await _context.SaveChangesAsync();
+
             return Ok(existingProduct);
         }
         [HttpDelete("DeleteProduct/{id}")]
