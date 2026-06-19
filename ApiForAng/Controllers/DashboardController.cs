@@ -16,7 +16,7 @@ namespace ApiForAng.Controllers
                 _context = context;
             }
             // GET: api/products
-            [HttpGet]
+            [HttpGet("AllProducts")]
             public async Task<IActionResult> GetAllProducts()   
             {
                 var products = await _context.products.ToListAsync();
